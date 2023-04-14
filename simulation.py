@@ -21,7 +21,8 @@ def chiSquared(data):
         tmp += 1
         intervals[d] = tmp
     print(intervals)
-
+# With a 2M data set and 10 intervals, the expected value is 200000
+# But we observed : [199093, 200171, 199471, 200361, 199923, 200285, 200395, 199789, 200098, 200414]
 
 if __name__ == "__main__":
     import sys
