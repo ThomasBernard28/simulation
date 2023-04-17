@@ -1,9 +1,6 @@
 import os
 
 import questionary
-import numpy as np
-
-from matplotlib import pyplot as plt
 from Code.EDecimals import *
 
 mainMenu = [

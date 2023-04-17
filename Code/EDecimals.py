@@ -2,6 +2,7 @@ import sys
 import re
 import numpy as np
 import scipy.stats as stats
+from scipy.stats import chi2
 
 from matplotlib import pyplot as plt
 
@@ -35,25 +36,36 @@ class EDecimals:
         plt.savefig("eDecimalsDistribution.png")
         plt.show()
 
-    def chiSquaredTest(self):
-        '''Test if the decimals of e are uniformly distributed'''
+    def chiSquaredTest(self, df=None, pValues=[0.1, 0.05, 0.01, 0.001]):
         observedFrequencies = np.zeros(10)
         for digit in self.decimals:
             observedFrequencies[digit] += 1
-        expectedFrequencies = np.full(10, len(self.decimals) / 10)
+        expectedFrequencies = np.zeros(10)
+        for i in range(10):
+            expectedFrequencies[i] = len(self.decimals) / 10
+        Kr = np.sum((observedFrequencies - expectedFrequencies) ** 2 / expectedFrequencies)
+        print("Here is the Kr value : " + str(Kr))
 
-        chiSquared, pValue = stats.chisquare(observedFrequencies, expectedFrequencies)
-        alpha = 0.05
-
-        if pValue > alpha:
-            print("\nWe can't reject the null hypothesis\n")
-            print("The decimals of e are uniformly distributed and so are random \n\n"
-                  "The p-value is : " + str(pValue) + " and the alpha is : " + str(alpha) + "\n\n"
-                  "As the p-value is greater than the alpha, we can't reject the null hypothesis\n\n"
-                  "The expected frequencies are : " + str(expectedFrequencies) + "\n\n"
-                  "The observed frequencies are : " + str(observedFrequencies))
-
-
+        if df is None:
+            df = len(observedFrequencies) - 1
         else:
-            print("We reject the null hypothesis")
-            print("The decimals of e are not uniformly distributed and so are not random")
+            df = df
+
+        for p in pValues:
+            if Kr <= chi2.ppf(q=1 - p, df=df):
+                print(f"ACCEPT at {p : }% ; Kr = {Kr : ^6.5f} <= ChiSquared critical value = {chi2.ppf(q=1 - p, df=df) : ^7.5f} ; df = {df}")
+            else:
+                print(f"REJECT at {p : }% ; Kr = {Kr : ^6.5f} <= ChiSquared critical value = {chi2.ppf(q=1 - p, df=df) : ^7.5f} ; df = {df}")
+
+        print("Each time the Kr value is lower than the ChiSquared critical value, we accept the null "
+              "hypothesis\nWhich means that the decimals of e are uniformly distributed and so are random\n")
+
+    def kolmogrovSmirnovTest(self):
+        '''Generate a uniform distribution with the len of decimals'''
+
+        uniformDistribution = np.random.uniform(0, 1, len(self.decimals))
+
+        '''Perform the Kolmogrov-Smirnov test'''
+        D, pValue = stats.kstest(self.decimals, uniformDistribution)
+
+        print(f"Kolmogrov-Smirnov test : D = {D} and p-value = {pValue}")
