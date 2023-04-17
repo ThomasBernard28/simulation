@@ -12,6 +12,8 @@ def initialize(file):
         decimals = [int(i) for i in new_e[2:]]
         chiSquaredTest(decimals)
 
+
+
 def chiSquaredTest(data):
     '''Test if the decimals of e are uniformly distributed'''
     observedFrequencies = np.zeros(10)

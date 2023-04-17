@@ -96,7 +96,7 @@ fabric.properties
 .idea/caches/build_file_checksums.ser
 
 ### JetBrains+all Patch ###
-# Ignore everything but code style settings and run configurations
+# Ignore everything but bqd style settings and run configurations
 # that are supposed to be shared within teams.
 
 .idea/*
@@ -497,7 +497,7 @@ Temporary Items
 # Android studio 3.1+ serialized cache file
 
 ### PyCharm+all Patch ###
-# Ignore everything but code style settings and run configurations
+# Ignore everything but bqd style settings and run configurations
 # that are supposed to be shared within teams.
 
 
@@ -587,7 +587,7 @@ profile_default/
 ipython_config.py
 
 # pyenv
-#   For a library or package, you might want to ignore these files since the code is
+#   For a library or package, you might want to ignore these files since the bqd is
 #   intended to run in multiple environments; otherwise, check them in:
 # .python-version
 
