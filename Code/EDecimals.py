@@ -1,8 +1,8 @@
 import sys
 import re
 import numpy as np
-import scipy.stats as stats
 from scipy.stats import chi2
+from scipy.stats import ksone
 
 from matplotlib import pyplot as plt
 
@@ -60,12 +60,32 @@ class EDecimals:
         print("Each time the Kr value is lower than the ChiSquared critical value, we accept the null "
               "hypothesis\nWhich means that the decimals of e are uniformly distributed and so are random\n")
 
-    def kolmogrovSmirnovTest(self):
+        plt.figure()
+        plt.bar(np.arange(10), observedFrequencies, color="none", edgecolor="red", label="Observed frequencies")
+        plt.bar(np.arange(10), expectedFrequencies, color="none", edgecolor="black", label="Expected frequencies")
+        plt.title("Comparison between observed and expected frequencies")
+        plt.savefig("eDecimalsComparison.png")
+        plt.show()
+
+    def kolmogorovSmirnovTest(self, pValues=[0.1, 0.05, 0.01, 0.001]):
         '''Generate a uniform distribution with the len of decimals'''
 
-        uniformDistribution = np.random.uniform(0, 1, len(self.decimals))
+        n = len(self.decimals)
 
-        '''Perform the Kolmogrov-Smirnov test'''
-        D, pValue = stats.kstest(self.decimals, uniformDistribution)
+        # Compute the empirical distribution
+        empirical_distribution = np.arrange(1, n+1) / n
+        # Compute the theoretical distribution
+        theoretical_distribution = [i / n for i in range(10)]
 
-        print(f"Kolmogrov-Smirnov test : D = {D} and p-value = {pValue}")
+
+        # Compute the max distance
+        D = max(abs(empirical_distribution[i] - theoretical_distribution[i]) for i in range(10))
+
+        for p in pValues:
+            if D <= ksone.ppf(1 - p, n):
+                print(f"ACCEPT at {p : }% ; D = {D : ^6.15f} <= Kolmogorov-Smirnov critical value = {ksone.ppf(1 - p/2, n) : ^7.5f} ; n = {n}")
+            else:
+                print(f"REJECT at {p : }% ; D = {D : ^6.15f} <= Kolmogorov-Smirnov critical value = {ksone.ppf(1 - p/2, n) : ^7.5f} ; n = {n}")
+
+        print("Each time the D value is lower than the Kolmogorov-Smirnov critical value, we accept the null " 
+                "hypothesis\nWhich means that the decimals of e are uniformly distributed and so are random\n")

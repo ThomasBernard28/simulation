@@ -51,7 +51,7 @@ def main():
         if answer2.get("Test Menu") == 'Chi-Squared test':
             EDecimals.chiSquaredTest(e)
         elif answer2.get("Test Menu") == 'Kolmogorov-Smirnov test':
-            print("TODO")
+            EDecimals.kolmogorovSmirnovTest(e)
 
     elif answer1.get("Main Menu") == 'Generation of uniform distribution with e decimals':
         # TODO
