@@ -35,6 +35,8 @@ class EDecimals:
         plt.figure()
         plt.bar(eLabels, eFreq)
         plt.title("Distribution des décimales de e")
+        plt.xlabel("Décimales")
+        plt.ylabel("Fréquences")
         plt.savefig("eDecimalsDistribution.png")
         plt.show()
 
