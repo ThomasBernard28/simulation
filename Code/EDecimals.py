@@ -1,5 +1,7 @@
 import sys
 import re
+from collections import Counter
+
 import numpy as np
 from scipy.stats import chi2
 from scipy.stats import ksone
@@ -61,31 +63,91 @@ class EDecimals:
               "hypothesis\nWhich means that the decimals of e are uniformly distributed and so are random\n")
 
         plt.figure()
-        plt.bar(np.arange(10), observedFrequencies, color="none", edgecolor="red", label="Observed frequencies")
-        plt.bar(np.arange(10), expectedFrequencies, color="none", edgecolor="black", label="Expected frequencies")
+        plt.bar(np.arange(10) - 0.2, observedFrequencies, width=0.4, color="red", label="Observed frequencies")
+        plt.bar(np.arange(10) + 0.2, expectedFrequencies, width=0.4, color="blue",label="Expected frequencies")
         plt.title("Comparison between observed and expected frequencies")
-        plt.savefig("eDecimalsComparison.png")
+        plt.xlabel("Digits")
+        plt.ylabel("Frequencies")
+        plt.legend(loc="lower right")
+        plt.savefig("eDecimalsChi2.png")
         plt.show()
 
-    def kolmogorovSmirnovTest(self, pValues=[0.1, 0.05, 0.01, 0.001]):
-        '''Generate a uniform distribution with the len of decimals'''
+    def stirlingNbr(self, r, k):
+        """
+        Compute the Stirling number of the second kind. The formula is given in the course.
+        """
+        if k == 0 or k > r:
+            return 0
+        elif k == 1 or k == r:
+            return 1
+        else:
+            return self.stirlingNbr(r - 1, k - 1) + k * self.stirlingNbr(r - 1, k)
 
-        n = len(self.decimals)
+    def pokerProb(self, r, k, d):
+        """
+        Compute the probability of having r different values in a packet of size k
+        where each value can be between 0 and d-1. Here d = 10 because we are working
+        with decimals. The formula is given in the course. I use np.prod to compute
+        the product of all the values between d and d-r+1
+        """
+        if r > d:
+            raise ValueError("r must be lower than d")
 
-        # Compute the empirical distribution
-        empirical_distribution = np.arrange(1, n+1) / n
-        # Compute the theoretical distribution
-        theoretical_distribution = [i / n for i in range(10)]
+        return self.stirlingNbr(k, r) * np.prod([d-i for i in range(r)]) /(d ** k)
+
+    def evaluatePokerHand(self, packet, nbrOfDifferentValues):
+        """
+        We will count the number of different values in a packet and increment the
+        corresponding value in nbrOfDifferentValues
+        """
+        # We use a set to count the number of different values in a packet
+        s = set()
+        for value in packet:
+            s.add(value)
+        nbrOfDifferentValues[len(s)-1] += 1
+
+    def pokerTest(self, nbrOfIntervals, sizeOfPacket):
+
+        # We split the decimals into packets of size sizeOfPacket
+        packets = [self.decimals[i:i+sizeOfPacket] for i in range(0, len(self.decimals), sizeOfPacket)]
+
+        # Once we've done that we can compute the number of different values in each packet
+        nbrOfDifferentValues = [0] * 5
+        for packet in packets:
+            self.evaluatePokerHand(packet, nbrOfDifferentValues)
+
+        # We compute the expected number of different values in a packet
+        expectedNbrOfDifferentValues = [0] * 5
+        # We compute the expected probability of having r sets of different
+        # values in a packet. Ex : if the packet is 55555, we have 1 set
+        expectedProbability = [0] * 5
+        for i in range(5):
+            expectedProbability[i] = self.pokerProb(i+1, sizeOfPacket, 10)
+
+        # We have 2M decimals so we have 2M/sizeOfPacket packets i.e we have
+        # 400k packets. So now we can compute the expected number of sets
+        # of different values in a packet
+        for i in range(5):
+            expectedNbrOfDifferentValues[i] = int(400000 * expectedProbability[i])
+
+        absoluteError = [abs(nbrOfDifferentValues[i] - expectedNbrOfDifferentValues[i]) for i in range(5)]
+        percentageError = [absoluteError[i] / expectedNbrOfDifferentValues[i] for i in range(5)]
+
+        print(f"Observed number of different values in a packet : {nbrOfDifferentValues}")
+        print(f"Expected number of different values in a packet : {expectedNbrOfDifferentValues}")
+        print(f"Absolute error : {absoluteError}")
 
 
-        # Compute the max distance
-        D = max(abs(empirical_distribution[i] - theoretical_distribution[i]) for i in range(10))
+        xline = np.arange(1, 6)
+        plt.title(f"Comparaison des fréquences observées et \nthéoriques pour des paquets de taille {sizeOfPacket}")
+        plt.xlabel("Nombre de valeurs différentes par paquet")
+        plt.ylabel("Fréquences")
+        plt.bar(xline - 0.2, nbrOfDifferentValues, width=0.4, color="red", label="Fréquences observées")
+        plt.bar(xline + 0.2, expectedNbrOfDifferentValues, width=0.4, color="blue", label="Fréquences théoriques")
+        plt.legend()
+        plt.show()
+        plt.savefig(f"eDecimalsPoker{sizeOfPacket}.png")
 
-        for p in pValues:
-            if D <= ksone.ppf(1 - p, n):
-                print(f"ACCEPT at {p : }% ; D = {D : ^6.15f} <= Kolmogorov-Smirnov critical value = {ksone.ppf(1 - p/2, n) : ^7.5f} ; n = {n}")
-            else:
-                print(f"REJECT at {p : }% ; D = {D : ^6.15f} <= Kolmogorov-Smirnov critical value = {ksone.ppf(1 - p/2, n) : ^7.5f} ; n = {n}")
 
-        print("Each time the D value is lower than the Kolmogorov-Smirnov critical value, we accept the null " 
-                "hypothesis\nWhich means that the decimals of e are uniformly distributed and so are random\n")
+
+        # Then we split each packet into intervals of size nbrOfIntervals

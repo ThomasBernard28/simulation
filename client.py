@@ -25,7 +25,7 @@ testMenu = [
     'message': 'Which test do you want to use ?',
     'choices': [
         'Chi-Squared test',
-        'Kolmogorov-Smirnov test',
+        'Poker Test',
     ],
     'use_arrow_keys': True
     }
@@ -50,8 +50,8 @@ def main():
         answer2 = questionary.prompt(testMenu)
         if answer2.get("Test Menu") == 'Chi-Squared test':
             EDecimals.chiSquaredTest(e)
-        elif answer2.get("Test Menu") == 'Kolmogorov-Smirnov test':
-            EDecimals.kolmogorovSmirnovTest(e)
+        elif answer2.get("Test Menu") == 'Poker Test':
+            EDecimals.pokerTest(e, 10, 5)
 
     elif answer1.get("Main Menu") == 'Generation of uniform distribution with e decimals':
         # TODO
