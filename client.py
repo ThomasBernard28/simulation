@@ -1,4 +1,5 @@
 import os
+import random
 
 import questionary
 from Code.EDecimals import *
@@ -31,6 +32,19 @@ testMenu = [
     }
 ]
 
+generatorMenu = [
+    {
+    'type': 'list',
+    'name': 'Generator Menu',
+    'message': 'Do you want to generate and test or compare with Python ?',
+    'choices': [
+        'Generate and Test',
+        'Compare',
+    ],
+    'use_arrow_keys': True
+    }
+]
+
 confirmMenu = [
     {
     'type': 'confirm',
@@ -49,13 +63,32 @@ def main():
     elif answer1.get("Main Menu") == 'Information on the pseudo-randomness of e decimals':
         answer2 = questionary.prompt(testMenu)
         if answer2.get("Test Menu") == 'Chi-Squared test':
-            EDecimals.chiSquaredTest(e)
+            EDecimals.chiSquaredTest(e, e.decimals)
         elif answer2.get("Test Menu") == 'Poker Test':
-            EDecimals.pokerTest(e, 10, 5)
+            EDecimals.pokerTest(e,e.decimals, 10, 5)
 
     elif answer1.get("Main Menu") == 'Generation of uniform distribution with e decimals':
-        # TODO
-        print("TODO")
+        answer3 = questionary.prompt(generatorMenu)
+        if answer3.get("Generator Menu") == 'Generate and Test':
+
+            print("----- Basic Generator -----")
+            BFreq = EDecimals.basicGenerator(e, 2000000)
+            print("Chi-Squared Test :")
+            EDecimals.chiSquaredTest(e, BFreq)
+            print("Poker Test validated by the Chi-Squared Test:")
+            EDecimals.pokerTest(e, BFreq, 10, 5)
+
+            print("\n\n")
+            print("----- LCG Generator -----")
+            LCGfrequencies = EDecimals.linearCongruentialGenerator(e, 2000000)
+            print("Chi-Squared Test :")
+            EDecimals.chiSquaredTest(e, LCGfrequencies)
+            print("Poker Test validated by the Chi-Squared Test:")
+            EDecimals.pokerTest(e, LCGfrequencies, 10, 5)
+
+        elif answer3.get("Generator Menu") == 'Test':
+            #TODO
+            pass
 
     elif answer1.get("Main Menu") == 'Exit':
         print("Goodbye !")

@@ -1,3 +1,4 @@
+import math
 import sys
 import re
 from collections import Counter
@@ -40,36 +41,41 @@ class EDecimals:
         plt.savefig("eDecimalsDistribution.png")
         plt.show()
 
-    def chiSquaredTest(self, df=None, pValues=[0.1, 0.05, 0.01, 0.001]):
+    def chiSquaredTest(self, data, df=None, pValues=[0.1, 0.05, 0.01, 0.001]):
         observedFrequencies = np.zeros(10)
-        for digit in self.decimals:
+        for digit in data:
             observedFrequencies[digit] += 1
         expectedFrequencies = np.zeros(10)
         for i in range(10):
-            expectedFrequencies[i] = len(self.decimals) / 10
-        Kr = np.sum((observedFrequencies - expectedFrequencies) ** 2 / expectedFrequencies)
-        print("Here is the Kr value : " + str(Kr))
+            expectedFrequencies[i] = len(data) / 10
+
+        Kr = 0
+        for i in range(10):
+            Kr += ((observedFrequencies[i] - expectedFrequencies[i]) / math.sqrt(expectedFrequencies[i]))**2
 
         if df is None:
             df = len(observedFrequencies) - 1
         else:
             df = df
 
+        #HO : the decimals of e are uniformly distributed
+        # On va accepter H0 si il est fort probable que les décimales de e soient uniformément distribuées
+        print("H0 : the decimals of e are uniformly distributed")
         for p in pValues:
-            if Kr <= chi2.ppf(q=1 - p, df=df):
-                print(f"ACCEPT at {p : }% ; Kr = {Kr : ^6.5f} <= ChiSquared critical value = {chi2.ppf(q=1 - p, df=df) : ^7.5f} ; df = {df}")
+            if Kr <= chi2.ppf(q=1-p, df=df):
+                print(f"ACCEPT H0 at {p * 100 : }% ; Kr = {Kr : ^6.5f} <= ChiSquared critical value = {chi2.ppf(q=1-p, df=df) : ^7.5f} ; df = {df}")
             else:
-                print(f"REJECT at {p : }% ; Kr = {Kr : ^6.5f} <= ChiSquared critical value = {chi2.ppf(q=1 - p, df=df) : ^7.5f} ; df = {df}")
+                print(f"REJECT H0 at {p * 100 : }% ; Kr = {Kr : ^6.5f} >= ChiSquared critical value = {chi2.ppf(q=1-p, df=df) : ^7.5f} ; df = {df}")
 
         print("Each time the Kr value is lower than the ChiSquared critical value, we accept the null "
               "hypothesis\nWhich means that the decimals of e are uniformly distributed and so are random\n")
 
         plt.figure()
-        plt.bar(np.arange(10) - 0.2, observedFrequencies, width=0.4, color="red", label="Observed frequencies")
-        plt.bar(np.arange(10) + 0.2, expectedFrequencies, width=0.4, color="blue",label="Expected frequencies")
-        plt.title("Comparison between observed and expected frequencies")
-        plt.xlabel("Digits")
-        plt.ylabel("Frequencies")
+        plt.bar(np.arange(10) - 0.2, observedFrequencies, width=0.4, color="red", label="Fréquences observées")
+        plt.bar(np.arange(10) + 0.2, expectedFrequencies, width=0.4, color="blue",label="Fréquences théoriques")
+        plt.title("Comparaison des fréquences observées et théoriques avec le test du Chi2")
+        plt.xlabel("Décimales")
+        plt.ylabel("Frequences")
         plt.legend(loc="lower right")
         plt.savefig("eDecimalsChi2.png")
         plt.show()
@@ -108,10 +114,10 @@ class EDecimals:
             s.add(value)
         nbrOfDifferentValues[len(s)-1] += 1
 
-    def pokerTest(self, nbrOfIntervals, sizeOfPacket):
+    def pokerTest(self,data, nbrOfIntervals, sizeOfPacket):
 
         # We split the decimals into packets of size sizeOfPacket
-        packets = [self.decimals[i:i+sizeOfPacket] for i in range(0, len(self.decimals), sizeOfPacket)]
+        packets = [data[i:i+sizeOfPacket] for i in range(0, len(data), sizeOfPacket)]
 
         # Once we've done that we can compute the number of different values in each packet
         nbrOfDifferentValues = [0] * 5
@@ -124,7 +130,7 @@ class EDecimals:
         # values in a packet. Ex : if the packet is 55555, we have 1 set
         expectedProbability = [0] * 5
         for i in range(5):
-            expectedProbability[i] = self.pokerProb(i+1, sizeOfPacket, 10)
+            expectedProbability[i] = self.pokerProb(i+1, sizeOfPacket, nbrOfIntervals)
 
         # We have 2M decimals so we have 2M/sizeOfPacket packets i.e we have
         # 400k packets. So now we can compute the expected number of sets
@@ -137,10 +143,27 @@ class EDecimals:
 
         print(f"Observed number of different values in a packet : {nbrOfDifferentValues}")
         print(f"Expected number of different values in a packet : {expectedNbrOfDifferentValues}")
-        print(f"Absolute error : {absoluteError}")
+
+        # I will now perform a ChiSquared test to see if the observed values are close to the expected ones
+
+        Kr = 0
+
+        for i in range(5):
+            Kr += ((nbrOfDifferentValues[i] - expectedNbrOfDifferentValues[i]) / math.sqrt(expectedNbrOfDifferentValues[i]))**2
+
+        df = 4
+
+        pValues = [0.1, 0.05, 0.01, 0.001]
+
+        for p in pValues:
+            if Kr <= chi2.ppf(q= 1- p, df=df):
+                print(f"ACCEPT H0 at {p * 100 : }% ; Kr = {Kr : ^6.5f} <= ChiSquared critical value = {chi2.ppf(q=1 - p, df=df) : ^7.5f} ; df = {df}")
+            else:
+                print(f"REJECT at {p * 100 : }% ; Kr = {Kr : ^6.5f} > ChiSquared critical value = {chi2.ppf(q=1 -p, df=df) : ^7.5f} ; df = {df}")
 
 
         xline = np.arange(1, 6)
+        plt.figure()
         plt.title(f"Comparaison des fréquences observées et \nthéoriques pour des paquets de taille {sizeOfPacket}")
         plt.xlabel("Nombre de valeurs différentes par paquet")
         plt.ylabel("Fréquences")
@@ -152,4 +175,40 @@ class EDecimals:
 
 
 
-        # Then we split each packet into intervals of size nbrOfIntervals
+    def basicGenerator(self, length):
+        k = len(self.decimals)
+        randomSequence = []
+        randomSequenceToTest = []
+
+        for i in range(length):
+            randomIndex = i % k
+            randomDigit = self.decimals[randomIndex]
+            randomSequence.append(randomDigit / 10)
+            randomSequenceToTest.append(randomDigit)
+
+        return randomSequenceToTest
+
+
+    def linearCongruentialGenerator(self, length):
+        #Il s'agit de valeurs typiques pour les paramètres d'un LCG
+        #Celles ci peuvent être trouveées sur cette page : https://fr.abcdef.wiki/wiki/Linear_congruential_generator
+        m = 2 ** 32
+        a = 1664525
+        c = 1013904223
+        seed = 12345
+
+        randomSequence = []
+        randomSequenceToTest = []
+
+        for i in range(length):
+            randomIndex = seed % length
+            randomDigit = self.decimals[randomIndex]
+            randomSequence.append(randomDigit / 10)
+            randomSequenceToTest.append(randomDigit)
+            seed = (a * seed + c) % m
+
+        return randomSequenceToTest
+
+
+
+
