@@ -1,11 +1,11 @@
 import math
 import sys
 import re
-from collections import Counter
+from datetime import datetime
+import random
 
 import numpy as np
 from scipy.stats import chi2
-from scipy.stats import ksone
 
 from matplotlib import pyplot as plt
 
@@ -70,15 +70,8 @@ class EDecimals:
         print("Each time the Kr value is lower than the ChiSquared critical value, we accept the null "
               "hypothesis\nWhich means that the decimals of e are uniformly distributed and so are random\n")
 
-        plt.figure()
-        plt.bar(np.arange(10) - 0.2, observedFrequencies, width=0.4, color="red", label="Fréquences observées")
-        plt.bar(np.arange(10) + 0.2, expectedFrequencies, width=0.4, color="blue",label="Fréquences théoriques")
-        plt.title("Comparaison des fréquences observées et théoriques avec le test du Chi2")
-        plt.xlabel("Décimales")
-        plt.ylabel("Frequences")
-        plt.legend(loc="lower right")
-        plt.savefig("eDecimalsChi2.png")
-        plt.show()
+        return observedFrequencies, expectedFrequencies
+
 
     def stirlingNbr(self, r, k):
         """
@@ -132,6 +125,7 @@ class EDecimals:
         for i in range(5):
             expectedProbability[i] = self.pokerProb(i+1, sizeOfPacket, nbrOfIntervals)
 
+
         # We have 2M decimals so we have 2M/sizeOfPacket packets i.e we have
         # 400k packets. So now we can compute the expected number of sets
         # of different values in a packet
@@ -139,10 +133,10 @@ class EDecimals:
             expectedNbrOfDifferentValues[i] = int(400000 * expectedProbability[i])
 
         absoluteError = [abs(nbrOfDifferentValues[i] - expectedNbrOfDifferentValues[i]) for i in range(5)]
-        percentageError = [absoluteError[i] / expectedNbrOfDifferentValues[i] for i in range(5)]
 
         print(f"Observed number of different values in a packet : {nbrOfDifferentValues}")
         print(f"Expected number of different values in a packet : {expectedNbrOfDifferentValues}")
+        print(f"Absolute error : {absoluteError}")
 
         # I will now perform a ChiSquared test to see if the observed values are close to the expected ones
 
@@ -161,18 +155,7 @@ class EDecimals:
             else:
                 print(f"REJECT at {p * 100 : }% ; Kr = {Kr : ^6.5f} > ChiSquared critical value = {chi2.ppf(q=1 -p, df=df) : ^7.5f} ; df = {df}")
 
-
-        xline = np.arange(1, 6)
-        plt.figure()
-        plt.title(f"Comparaison des fréquences observées et \nthéoriques pour des paquets de taille {sizeOfPacket}")
-        plt.xlabel("Nombre de valeurs différentes par paquet")
-        plt.ylabel("Fréquences")
-        plt.bar(xline - 0.2, nbrOfDifferentValues, width=0.4, color="red", label="Fréquences observées")
-        plt.bar(xline + 0.2, expectedNbrOfDifferentValues, width=0.4, color="blue", label="Fréquences théoriques")
-        plt.legend()
-        plt.show()
-        plt.savefig(f"eDecimalsPoker{sizeOfPacket}.png")
-
+        return nbrOfDifferentValues, expectedNbrOfDifferentValues
 
 
     def basicGenerator(self, length):
@@ -185,7 +168,6 @@ class EDecimals:
             randomDigit = self.decimals[randomIndex]
             randomSequence.append(randomDigit / 10)
             randomSequenceToTest.append(randomDigit)
-
         return randomSequenceToTest
 
 
@@ -195,7 +177,7 @@ class EDecimals:
         m = 2 ** 32
         a = 1664525
         c = 1013904223
-        seed = 12345
+        seed = 683290
 
         randomSequence = []
         randomSequenceToTest = []
@@ -208,6 +190,67 @@ class EDecimals:
             seed = (a * seed + c) % m
 
         return randomSequenceToTest
+
+    def compareWithPython(self, length):
+        randomSequence = []
+        randomSequenceToTest = []
+
+        for i in range(length):
+            randomDigit = random.randint(0, 9)
+            randomSequence.append(randomDigit/10)
+            randomSequenceToTest.append(randomDigit)
+
+        return randomSequenceToTest
+
+    def plotChiSquared(self, observedFrequencies, expectedFrequencies, observedFrequenciesComparison=None, gen=False):
+        if observedFrequenciesComparison is None:
+            plt.figure()
+            plt.title("Comparaison des fréquences observées et théoriques avec le test de chi2")
+            plt.xlabel("Décimales")
+            plt.ylabel("Fréquences")
+            plt.bar(np.arange(10) - 0.2, observedFrequencies, width=0.4, color="red", label="Fréquences observées")
+            plt.bar(np.arange(10) + 0.2, expectedFrequencies, width=0.4, color="blue", label="Fréquences théoriques")
+
+            plt.legend(loc="lower right")
+            plt.show()
+
+
+        else:
+            plt.figure()
+            plt.title("Comparaison des fréquences observées et théoriques avec le test de chi2\n"
+                      "pour le générateur de nombres aléatoires de Python")
+            plt.xlabel("Nombre généré")
+            plt.ylabel("Fréquences")
+            plt.bar(np.arange(10) - 0.3, observedFrequencies, width=0.3, color="red", label="Fréquences observées avec LCG")
+            plt.bar(np.arange(10) + 0.3, expectedFrequencies, width=0.3, color="blue", label="Fréquences théoriques")
+            plt.bar(np.arange(10), observedFrequenciesComparison, width=0.3, color="green", label="Fréquences observées avec Python")
+            plt.legend(loc="lower right")
+            plt.show()
+
+    def plotPoker(self, observedNbr, expectedNbr, observedNbrComparison=None, sizeOfPacket=5,):
+        if observedNbrComparison is None:
+            xline = np.arange(1, 6)
+            plt.figure()
+            plt.title(f"Comparaison des fréquences observées et \nthéoriques pour des paquets de taille {sizeOfPacket}")
+            plt.xlabel("Nombre de valeurs différentes par paquet")
+            plt.ylabel("Fréquences")
+            plt.bar(xline - 0.2, observedNbr, width=0.4, color="red", label="Fréquences observées")
+            plt.bar(xline + 0.2, expectedNbr, width=0.4, color="blue", label="Fréquences théoriques")
+            plt.legend()
+            plt.show()
+        else:
+            xline = np.arange(1, 6)
+            plt.figure()
+            plt.title(f"Comparaison des fréquences observées et \nthéoriques pour des paquets de taille {sizeOfPacket}")
+            plt.xlabel("Nombre de valeurs différentes par paquet")
+            plt.ylabel("Fréquences")
+            plt.bar(xline - 0.3, observedNbr, width=0.3, color="red", label="Fréquences observées avec LCG")
+            plt.bar(xline, observedNbrComparison, width=0.3, color="green", label="Fréquences observées avec Python")
+            plt.bar(xline + 0.3, expectedNbr, width=0.3, color="blue", label="Fréquences théoriques")
+            plt.legend()
+            plt.show()
+
+
 
 
 

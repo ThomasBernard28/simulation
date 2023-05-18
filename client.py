@@ -1,5 +1,4 @@
 import os
-import random
 
 import questionary
 from Code.EDecimals import *
@@ -63,32 +62,47 @@ def main():
     elif answer1.get("Main Menu") == 'Information on the pseudo-randomness of e decimals':
         answer2 = questionary.prompt(testMenu)
         if answer2.get("Test Menu") == 'Chi-Squared test':
-            EDecimals.chiSquaredTest(e, e.decimals)
+            obs, exp = EDecimals.chiSquaredTest(e, e.decimals)
+            EDecimals.plotChiSquared(e, obs, exp)
+
+
         elif answer2.get("Test Menu") == 'Poker Test':
-            EDecimals.pokerTest(e,e.decimals, 10, 5)
+            obs, exp = EDecimals.pokerTest(e, e.decimals, 10, 5)
+            EDecimals.plotPoker(e, obs, exp)
 
     elif answer1.get("Main Menu") == 'Generation of uniform distribution with e decimals':
         answer3 = questionary.prompt(generatorMenu)
         if answer3.get("Generator Menu") == 'Generate and Test':
-
+            """
             print("----- Basic Generator -----")
             BFreq = EDecimals.basicGenerator(e, 2000000)
             print("Chi-Squared Test :")
             EDecimals.chiSquaredTest(e, BFreq)
             print("Poker Test validated by the Chi-Squared Test:")
             EDecimals.pokerTest(e, BFreq, 10, 5)
-
-            print("\n\n")
+            """
             print("----- LCG Generator -----")
             LCGfrequencies = EDecimals.linearCongruentialGenerator(e, 2000000)
             print("Chi-Squared Test :")
-            EDecimals.chiSquaredTest(e, LCGfrequencies)
+            obs, exp = EDecimals.chiSquaredTest(e, LCGfrequencies)
+            EDecimals.plotChiSquared(e, obs, exp, gen=True)
             print("Poker Test validated by the Chi-Squared Test:")
-            EDecimals.pokerTest(e, LCGfrequencies, 10, 5)
+            obs, exp = EDecimals.pokerTest(e, LCGfrequencies, 10, 5)
+            EDecimals.plotPoker(e, obs, exp)
 
-        elif answer3.get("Generator Menu") == 'Test':
-            #TODO
-            pass
+
+        elif answer3.get("Generator Menu") == 'Compare':
+            LCGfrequencies = EDecimals.linearCongruentialGenerator(e, 2000000)
+            obsLCG, expLCG = EDecimals.chiSquaredTest(e, LCGfrequencies)
+            obsLCGPoker, expLCGPoker = EDecimals.pokerTest(e, LCGfrequencies, 10, 5)
+
+            python = EDecimals.compareWithPython(e, 2000000)
+            print("Chi-Squared Test :")
+            obs, exp = EDecimals.chiSquaredTest(e, python)
+            EDecimals.plotChiSquared(e, obs, exp, obsLCG, gen=True)
+            print("Poker Test validated by the Chi-Squared Test:")
+            obs, exp = EDecimals.pokerTest(e, python, 10, 5)
+            EDecimals.plotPoker(e, obs, exp, obsLCGPoker)
 
     elif answer1.get("Main Menu") == 'Exit':
         print("Goodbye !")
